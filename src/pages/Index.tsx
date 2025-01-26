@@ -8,7 +8,7 @@ const Index = () => {
   const { entries, addEntry, updateEntry } = useWeighing();
   const [licensePlate, setLicensePlate] = useState("");
   const [weight, setWeight] = useState("");
-  const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand">("Holz");
+  const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand" | "Aushub" | "gesiebte Erde fein" | "gesiebte Erde Grob">("Holz");
 
   const handleWeighing = () => {
     const existingEntry = entries.find(
@@ -31,10 +31,24 @@ const Index = () => {
     setWeight("");
   };
 
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date);
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-8">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-primary">Wiegestation IG Modelltrucker Neckar-Alb</h1>
+      </div>
+
       <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-        <h1 className="text-2xl font-bold">Wagenprotokoll</h1>
+        <h2 className="text-2xl font-bold">Wagenprotokoll</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Input
@@ -58,6 +72,9 @@ const Index = () => {
             <option value="Müll">Müll</option>
             <option value="Papier">Papier</option>
             <option value="Sand">Sand</option>
+            <option value="Aushub">Aushub</option>
+            <option value="gesiebte Erde fein">gesiebte Erde fein</option>
+            <option value="gesiebte Erde Grob">gesiebte Erde Grob</option>
           </select>
           <Button onClick={handleWeighing}>Wiegen</Button>
         </div>
@@ -74,6 +91,8 @@ const Index = () => {
               <TableHead>Differenz</TableHead>
               <TableHead>Ladung</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Datum</TableHead>
+              <TableHead>Letztes Update</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -97,6 +116,8 @@ const Index = () => {
                     {entry.emptyWeight ? "Abgeschlossen" : "Offen"}
                   </span>
                 </TableCell>
+                <TableCell>{formatDate(entry.timestamp)}</TableCell>
+                <TableCell>{formatDate(entry.lastUpdated)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
