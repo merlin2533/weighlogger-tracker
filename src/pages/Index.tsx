@@ -5,25 +5,30 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
 const Index = () => {
-  const { entries, addEntry, updateEntry } = useWeighing();
+  const { entries, addEntry, updateEntry, getKnownVehicles, getVehicleSummary } = useWeighing();
   const [licensePlate, setLicensePlate] = useState("");
   const [weight, setWeight] = useState("");
   const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand" | "Aushub" | "gesiebte Erde fein" | "gesiebte Erde Grob">("Holz");
 
   const handleWeighing = () => {
+    const knownVehicles = getKnownVehicles();
+    const knownVehicle = knownVehicles.find(v => v.licensePlate === licensePlate);
+    
     const existingEntry = entries.find(
       (e) => e.licensePlate === licensePlate && !e.emptyWeight
     );
 
     if (existingEntry) {
-      // Zweite Wiegung (Leergewicht)
+      // Second weighing (empty weight)
       updateEntry(existingEntry.id, { emptyWeight: Number(weight) });
     } else {
-      // Erste Wiegung (Vollgewicht)
+      // First weighing (full weight)
       addEntry({
         licensePlate,
         fullWeight: Number(weight),
         cargoType,
+        // If we know the empty weight from previous transactions, use it
+        emptyWeight: knownVehicle?.emptyWeight,
       });
     }
 
@@ -41,6 +46,9 @@ const Index = () => {
     }).format(date);
   };
 
+  const knownVehicles = getKnownVehicles();
+  const vehicleSummary = getVehicleSummary();
+
   return (
     <div className="container mx-auto p-4 space-y-8">
       <div className="text-center mb-8">
@@ -51,11 +59,27 @@ const Index = () => {
         <h2 className="text-2xl font-bold">Wagenprotokoll</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Input
-            placeholder="Kennzeichen"
-            value={licensePlate}
-            onChange={(e) => setLicensePlate(e.target.value)}
-          />
+          <div className="flex flex-col space-y-2">
+            <select
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              value={licensePlate}
+              onChange={(e) => setLicensePlate(e.target.value)}
+            >
+              <option value="">Neues Kennzeichen...</option>
+              {knownVehicles.map((vehicle) => (
+                <option key={vehicle.licensePlate} value={vehicle.licensePlate}>
+                  {vehicle.licensePlate}
+                </option>
+              ))}
+            </select>
+            {!knownVehicles.find(v => v.licensePlate === licensePlate) && (
+              <Input
+                placeholder="Neues Kennzeichen"
+                value={licensePlate}
+                onChange={(e) => setLicensePlate(e.target.value)}
+              />
+            )}
+          </div>
           <Input
             type="number"
             placeholder="Gewicht (kg)"
@@ -118,6 +142,26 @@ const Index = () => {
                 </TableCell>
                 <TableCell>{formatDate(entry.timestamp)}</TableCell>
                 <TableCell>{formatDate(entry.lastUpdated)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-bold mb-4">Gesamtübersicht pro Fahrzeug</h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Kennzeichen</TableHead>
+              <TableHead>Gesamtgewicht transportiert</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {vehicleSummary.map((summary) => (
+              <TableRow key={summary.licensePlate}>
+                <TableCell>{summary.licensePlate}</TableCell>
+                <TableCell>{summary.totalCargo} kg</TableCell>
               </TableRow>
             ))}
           </TableBody>
