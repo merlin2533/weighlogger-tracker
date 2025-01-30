@@ -150,6 +150,14 @@ const Index = () => {
   const dailyTotal = calculateDailyTotal();
   const dailyCargoTypeSummary = getDailyCargoTypeSummary();
 
+  const handleExportSummary = () => {
+    const data = vehicleSummary.map(summary => ({
+      Kennzeichen: summary.licensePlate,
+      "Gesamtgewicht transportiert": `${summary.totalCargo} kg`
+    }));
+    exportToExcel(data, "Fahrzeug-Übersicht");
+  };
+
   return (
     <div className="container mx-auto p-4 space-y-8">
       <div className="text-center mb-8">
