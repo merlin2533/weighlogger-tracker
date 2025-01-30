@@ -15,6 +15,7 @@ interface WeighingContextType {
   addEntry: (entry: Omit<WeighingEntry, 'id' | 'timestamp' | 'lastUpdated'>) => void;
   updateEntry: (id: string, entry: Partial<WeighingEntry>) => void;
   deleteEntry: (id: string) => void;
+  importTransactions: (transactions: WeighingEntry[]) => void;
   getKnownVehicles: () => { licensePlate: string; emptyWeight?: number }[];
   getVehicleSummary: () => { licensePlate: string; totalCargo: number }[];
   getDailyCargoTypeSummary: () => { cargoType: string; totalWeight: number }[];
@@ -48,6 +49,10 @@ export const WeighingProvider = ({ children }: { children: ReactNode }) => {
 
   const deleteEntry = (id: string) => {
     setEntries((prev) => prev.filter((entry) => entry.id !== id));
+  };
+
+  const importTransactions = (transactions: WeighingEntry[]) => {
+    setEntries(transactions);
   };
 
   const getKnownVehicles = () => {
@@ -116,6 +121,7 @@ export const WeighingProvider = ({ children }: { children: ReactNode }) => {
       addEntry, 
       updateEntry, 
       deleteEntry,
+      importTransactions,
       getKnownVehicles, 
       getVehicleSummary,
       getDailyCargoTypeSummary 

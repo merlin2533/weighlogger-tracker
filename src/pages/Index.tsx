@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import * as XLSX from 'xlsx';
-import { Download, Trash2, Edit } from "lucide-react";
+import { Download, Trash2, Edit, Upload } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 
 const Index = () => {
-  const { entries, addEntry, updateEntry, deleteEntry, getKnownVehicles, getVehicleSummary, getDailyCargoTypeSummary } = useWeighing();
+  const { entries, addEntry, updateEntry, deleteEntry, getKnownVehicles, getVehicleSummary, getDailyCargoTypeSummary, importTransactions } = useWeighing();
   const [licensePlate, setLicensePlate] = useState("");
   const [weight, setWeight] = useState("");
   const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand" | "Aushub" | "gesiebte Erde fein" | "gesiebte Erde Grob" | "Steine" | "Lego Steine (Beton)" | "Chipsi Mais" | "Seramis">("Holz");
@@ -89,19 +89,45 @@ const Index = () => {
       Ladung: entry.cargoType,
       Status: entry.emptyWeight ? "Abgeschlossen" : "Offen",
       Datum: formatDate(entry.timestamp),
-      "Letztes Update": formatDate(entry.lastUpdated)
+      "Letztes Update": formatDate(entry.lastUpdated),
+      id: entry.id,
+      timestamp: entry.timestamp.toISOString(),
+      lastUpdated: entry.lastUpdated.toISOString()
     }));
     exportToExcel(data, "Wiegeaktionen");
   };
 
-  const handleExportSummary = () => {
-    const data = vehicleSummary
-      .sort((a, b) => b.totalCargo - a.totalCargo)
-      .map(summary => ({
-        Kennzeichen: summary.licensePlate,
-        "Gesamtgewicht transportiert (kg)": summary.totalCargo
-      }));
-    exportToExcel(data, "Fahrzeug-Zusammenfassung");
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        const transactions = jsonData.map((row: any) => ({
+          id: row.id,
+          licensePlate: row.Kennzeichen,
+          fullWeight: row.Vollgewicht,
+          emptyWeight: row.Leergewicht,
+          cargoType: row.Ladung,
+          timestamp: new Date(row.timestamp),
+          lastUpdated: new Date(row.lastUpdated)
+        }));
+
+        importTransactions(transactions);
+        toast.success("Transaktionen erfolgreich importiert");
+      } catch (error) {
+        console.error('Error importing file:', error);
+        toast.error("Fehler beim Importieren der Datei");
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   const calculateDailyTotal = () => {
@@ -186,10 +212,24 @@ const Index = () => {
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Transaktionen</h2>
-          <Button onClick={handleExportTransactions} variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            Als Excel exportieren
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleExportTransactions} variant="outline" size="sm">
+              <Download className="w-4 h-4 mr-2" />
+              Als Excel exportieren
+            </Button>
+            <div className="relative">
+              <input
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <Button variant="outline" size="sm">
+                <Upload className="w-4 h-4 mr-2" />
+                Excel importieren
+              </Button>
+            </div>
+          </div>
         </div>
         <Table>
           <TableHeader>
