@@ -5,7 +5,7 @@ export interface WeighingEntry {
   licensePlate: string;
   fullWeight?: number;
   emptyWeight?: number;
-  cargoType?: 'Holz' | 'Kies' | 'Müll' | 'Papier' | 'Sand' | 'Aushub' | 'gesiebte Erde fein' | 'gesiebte Erde Grob';
+  cargoType?: 'Holz' | 'Kies' | 'Müll' | 'Papier' | 'Sand' | 'Aushub' | 'gesiebte Erde fein' | 'gesiebte Erde Grob' | 'Steine' | 'Lego Steine (Beton)' | 'Chipsi Mais' | 'Seramis';
   timestamp: Date;
   lastUpdated: Date;
 }
@@ -14,8 +14,10 @@ interface WeighingContextType {
   entries: WeighingEntry[];
   addEntry: (entry: Omit<WeighingEntry, 'id' | 'timestamp' | 'lastUpdated'>) => void;
   updateEntry: (id: string, entry: Partial<WeighingEntry>) => void;
+  deleteEntry: (id: string) => void;
   getKnownVehicles: () => { licensePlate: string; emptyWeight?: number }[];
   getVehicleSummary: () => { licensePlate: string; totalCargo: number }[];
+  getDailyCargoTypeSummary: () => { cargoType: string; totalWeight: number }[];
 }
 
 const WeighingContext = createContext<WeighingContextType | undefined>(undefined);
@@ -31,7 +33,7 @@ export const WeighingProvider = ({ children }: { children: ReactNode }) => {
       timestamp: now,
       lastUpdated: now,
     };
-    setEntries((prev) => [newEntry, ...prev]); // Add new entries at the beginning
+    setEntries((prev) => [newEntry, ...prev]);
   };
 
   const updateEntry = (id: string, updatedData: Partial<WeighingEntry>) => {
@@ -42,6 +44,10 @@ export const WeighingProvider = ({ children }: { children: ReactNode }) => {
           : entry
       )
     );
+  };
+
+  const deleteEntry = (id: string) => {
+    setEntries((prev) => prev.filter((entry) => entry.id !== id));
   };
 
   const getKnownVehicles = () => {
@@ -76,8 +82,44 @@ export const WeighingProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  const getDailyCargoTypeSummary = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const summary = new Map<string, number>();
+    
+    entries.forEach(entry => {
+      const entryDate = new Date(entry.timestamp);
+      entryDate.setHours(0, 0, 0, 0);
+      
+      if (
+        entryDate.getTime() === today.getTime() && 
+        entry.fullWeight && 
+        entry.emptyWeight && 
+        entry.cargoType
+      ) {
+        const cargo = entry.fullWeight - entry.emptyWeight;
+        const current = summary.get(entry.cargoType) || 0;
+        summary.set(entry.cargoType, current + cargo);
+      }
+    });
+
+    return Array.from(summary).map(([cargoType, totalWeight]) => ({
+      cargoType,
+      totalWeight
+    })).sort((a, b) => b.totalWeight - a.totalWeight);
+  };
+
   return (
-    <WeighingContext.Provider value={{ entries, addEntry, updateEntry, getKnownVehicles, getVehicleSummary }}>
+    <WeighingContext.Provider value={{ 
+      entries, 
+      addEntry, 
+      updateEntry, 
+      deleteEntry,
+      getKnownVehicles, 
+      getVehicleSummary,
+      getDailyCargoTypeSummary 
+    }}>
       {children}
     </WeighingContext.Provider>
   );

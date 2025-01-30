@@ -4,13 +4,22 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import * as XLSX from 'xlsx';
-import { Download } from "lucide-react";
+import { Download, Trash2, Edit } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 const Index = () => {
-  const { entries, addEntry, updateEntry, getKnownVehicles, getVehicleSummary } = useWeighing();
+  const { entries, addEntry, updateEntry, deleteEntry, getKnownVehicles, getVehicleSummary, getDailyCargoTypeSummary } = useWeighing();
   const [licensePlate, setLicensePlate] = useState("");
   const [weight, setWeight] = useState("");
-  const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand" | "Aushub" | "gesiebte Erde fein" | "gesiebte Erde Grob">("Holz");
+  const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand" | "Aushub" | "gesiebte Erde fein" | "gesiebte Erde Grob" | "Steine" | "Lego Steine (Beton)" | "Chipsi Mais" | "Seramis">("Holz");
+  const [editingEntry, setEditingEntry] = useState<any>(null);
 
   const handleWeighing = () => {
     const knownVehicles = getKnownVehicles();
@@ -36,6 +45,22 @@ const Index = () => {
 
     setLicensePlate("");
     setWeight("");
+  };
+
+  const handleDelete = (id: string) => {
+    deleteEntry(id);
+    toast.success("Transaktion wurde gelöscht");
+  };
+
+  const handleEdit = (entry: any) => {
+    updateEntry(entry.id, {
+      licensePlate: entry.licensePlate,
+      fullWeight: Number(entry.fullWeight),
+      emptyWeight: Number(entry.emptyWeight),
+      cargoType: entry.cargoType,
+    });
+    setEditingEntry(null);
+    toast.success("Transaktion wurde aktualisiert");
   };
 
   const formatDate = (date: Date) => {
@@ -97,6 +122,7 @@ const Index = () => {
   const knownVehicles = getKnownVehicles();
   const vehicleSummary = getVehicleSummary().sort((a, b) => b.totalCargo - a.totalCargo);
   const dailyTotal = calculateDailyTotal();
+  const dailyCargoTypeSummary = getDailyCargoTypeSummary();
 
   return (
     <div className="container mx-auto p-4 space-y-8">
@@ -148,6 +174,10 @@ const Index = () => {
             <option value="Aushub">Aushub</option>
             <option value="gesiebte Erde fein">gesiebte Erde fein</option>
             <option value="gesiebte Erde Grob">gesiebte Erde Grob</option>
+            <option value="Steine">Steine</option>
+            <option value="Lego Steine (Beton)">Lego Steine (Beton)</option>
+            <option value="Chipsi Mais">Chipsi Mais</option>
+            <option value="Seramis">Seramis</option>
           </select>
           <Button onClick={handleWeighing}>Wiegen</Button>
         </div>
@@ -172,6 +202,7 @@ const Index = () => {
               <TableHead>Status</TableHead>
               <TableHead>Datum</TableHead>
               <TableHead>Letztes Update</TableHead>
+              <TableHead>Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -197,6 +228,76 @@ const Index = () => {
                 </TableCell>
                 <TableCell>{formatDate(entry.timestamp)}</TableCell>
                 <TableCell>{formatDate(entry.lastUpdated)}</TableCell>
+                <TableCell>
+                  <div className="flex space-x-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="outline" size="icon" onClick={() => setEditingEntry({...entry})}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Transaktion bearbeiten</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <label>Kennzeichen</label>
+                            <Input
+                              value={editingEntry?.licensePlate || ''}
+                              onChange={(e) => setEditingEntry({...editingEntry, licensePlate: e.target.value})}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label>Vollgewicht (kg)</label>
+                            <Input
+                              type="number"
+                              value={editingEntry?.fullWeight || ''}
+                              onChange={(e) => setEditingEntry({...editingEntry, fullWeight: e.target.value})}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label>Leergewicht (kg)</label>
+                            <Input
+                              type="number"
+                              value={editingEntry?.emptyWeight || ''}
+                              onChange={(e) => setEditingEntry({...editingEntry, emptyWeight: e.target.value})}
+                            />
+                          </div>
+                          <div className="grid gap-2">
+                            <label>Ladung</label>
+                            <select
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                              value={editingEntry?.cargoType || ''}
+                              onChange={(e) => setEditingEntry({...editingEntry, cargoType: e.target.value})}
+                            >
+                              <option value="Holz">Holz</option>
+                              <option value="Kies">Kies</option>
+                              <option value="Müll">Müll</option>
+                              <option value="Papier">Papier</option>
+                              <option value="Sand">Sand</option>
+                              <option value="Aushub">Aushub</option>
+                              <option value="gesiebte Erde fein">gesiebte Erde fein</option>
+                              <option value="gesiebte Erde Grob">gesiebte Erde Grob</option>
+                              <option value="Steine">Steine</option>
+                              <option value="Lego Steine (Beton)">Lego Steine (Beton)</option>
+                              <option value="Chipsi Mais">Chipsi Mais</option>
+                              <option value="Seramis">Seramis</option>
+                            </select>
+                          </div>
+                          <Button onClick={() => handleEdit(editingEntry)}>Speichern</Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => handleDelete(entry.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -243,6 +344,26 @@ const Index = () => {
               <TableCell>{formatDate(new Date())}</TableCell>
               <TableCell>{dailyTotal} kg</TableCell>
             </TableRow>
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-bold mb-4">Tagesleistung nach Materialart</h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Material</TableHead>
+              <TableHead>Gesamtgewicht transportiert</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {dailyCargoTypeSummary.map((summary) => (
+              <TableRow key={summary.cargoType}>
+                <TableCell>{summary.cargoType}</TableCell>
+                <TableCell>{summary.totalWeight} kg</TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>
