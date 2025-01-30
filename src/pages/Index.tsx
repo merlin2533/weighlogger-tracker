@@ -18,7 +18,7 @@ const Index = () => {
   const { entries, addEntry, updateEntry, deleteEntry, getKnownVehicles, getVehicleSummary, getDailyCargoTypeSummary, importTransactions } = useWeighing();
   const [licensePlate, setLicensePlate] = useState("");
   const [weight, setWeight] = useState("");
-  const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand" | "Aushub" | "gesiebte Erde fein" | "gesiebte Erde Grob" | "Steine" | "Lego Steine (Beton)" | "Chipsi Mais" | "Seramis">("Holz");
+  const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand" | "Aushub" | "gesiebte Erde fein" | "gesiebte Erde Grob" | "Steine" | "Lego Steine (Beton)" | "Chipsi Mais" | "Seramis" | "Kronkorken" | "Dosen">("Holz");
   const [editingEntry, setEditingEntry] = useState<any>(null);
 
   const handleWeighing = () => {
@@ -212,6 +212,8 @@ const Index = () => {
             <option value="Lego Steine (Beton)">Lego Steine (Beton)</option>
             <option value="Chipsi Mais">Chipsi Mais</option>
             <option value="Seramis">Seramis</option>
+            <option value="Kronkorken">Kronkorken</option>
+            <option value="Dosen">Dosen</option>
           </select>
           <Button onClick={handleWeighing}>Wiegen</Button>
         </div>
@@ -331,6 +333,8 @@ const Index = () => {
                               <option value="Lego Steine (Beton)">Lego Steine (Beton)</option>
                               <option value="Chipsi Mais">Chipsi Mais</option>
                               <option value="Seramis">Seramis</option>
+                              <option value="Kronkorken">Kronkorken</option>
+                              <option value="Dosen">Dosen</option>
                             </select>
                           </div>
                           <Button onClick={() => handleEdit(editingEntry)}>Speichern</Button>

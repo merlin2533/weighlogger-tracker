@@ -5,7 +5,7 @@ export interface WeighingEntry {
   licensePlate: string;
   fullWeight?: number;
   emptyWeight?: number;
-  cargoType?: 'Holz' | 'Kies' | 'Müll' | 'Papier' | 'Sand' | 'Aushub' | 'gesiebte Erde fein' | 'gesiebte Erde Grob' | 'Steine' | 'Lego Steine (Beton)' | 'Chipsi Mais' | 'Seramis';
+  cargoType?: 'Holz' | 'Kies' | 'Müll' | 'Papier' | 'Sand' | 'Aushub' | 'gesiebte Erde fein' | 'gesiebte Erde Grob' | 'Steine' | 'Lego Steine (Beton)' | 'Chipsi Mais' | 'Seramis' | 'Kronkorken' | 'Dosen';
   timestamp: Date;
   lastUpdated: Date;
 }
