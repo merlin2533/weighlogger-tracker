@@ -3,6 +3,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import * as XLSX from 'xlsx';
+import { Download } from "lucide-react";
 
 const Index = () => {
   const { entries, addEntry, updateEntry, getKnownVehicles, getVehicleSummary } = useWeighing();
@@ -46,8 +48,55 @@ const Index = () => {
     }).format(date);
   };
 
+  const exportToExcel = (data: any[], filename: string) => {
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+    XLSX.writeFile(wb, `${filename}.xlsx`);
+  };
+
+  const handleExportTransactions = () => {
+    const data = entries.map(entry => ({
+      Kennzeichen: entry.licensePlate,
+      Vollgewicht: entry.fullWeight,
+      Leergewicht: entry.emptyWeight,
+      Differenz: entry.fullWeight && entry.emptyWeight ? entry.fullWeight - entry.emptyWeight : '-',
+      Ladung: entry.cargoType,
+      Status: entry.emptyWeight ? "Abgeschlossen" : "Offen",
+      Datum: formatDate(entry.timestamp),
+      "Letztes Update": formatDate(entry.lastUpdated)
+    }));
+    exportToExcel(data, "Wiegeaktionen");
+  };
+
+  const handleExportSummary = () => {
+    const data = vehicleSummary
+      .sort((a, b) => b.totalCargo - a.totalCargo)
+      .map(summary => ({
+        Kennzeichen: summary.licensePlate,
+        "Gesamtgewicht transportiert (kg)": summary.totalCargo
+      }));
+    exportToExcel(data, "Fahrzeug-Zusammenfassung");
+  };
+
+  const calculateDailyTotal = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    return entries.reduce((total, entry) => {
+      const entryDate = new Date(entry.timestamp);
+      entryDate.setHours(0, 0, 0, 0);
+      
+      if (entryDate.getTime() === today.getTime() && entry.fullWeight && entry.emptyWeight) {
+        return total + (entry.fullWeight - entry.emptyWeight);
+      }
+      return total;
+    }, 0);
+  };
+
   const knownVehicles = getKnownVehicles();
-  const vehicleSummary = getVehicleSummary();
+  const vehicleSummary = getVehicleSummary().sort((a, b) => b.totalCargo - a.totalCargo);
+  const dailyTotal = calculateDailyTotal();
 
   return (
     <div className="container mx-auto p-4 space-y-8">
@@ -105,7 +154,13 @@ const Index = () => {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-bold mb-4">Transaktionen</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Transaktionen</h2>
+          <Button onClick={handleExportTransactions} variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Als Excel exportieren
+          </Button>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -149,7 +204,13 @@ const Index = () => {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-md">
-        <h2 className="text-xl font-bold mb-4">Gesamtübersicht pro Fahrzeug</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Gesamtübersicht pro Fahrzeug</h2>
+          <Button onClick={handleExportSummary} variant="outline" size="sm">
+            <Download className="w-4 h-4 mr-2" />
+            Als Excel exportieren
+          </Button>
+        </div>
         <Table>
           <TableHeader>
             <TableRow>
@@ -164,6 +225,24 @@ const Index = () => {
                 <TableCell>{summary.totalCargo} kg</TableCell>
               </TableRow>
             ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-bold mb-4">Tagesleistung</h2>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Datum</TableHead>
+              <TableHead>Gesamtgewicht transportiert</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow>
+              <TableCell>{formatDate(new Date())}</TableCell>
+              <TableCell>{dailyTotal} kg</TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </div>
