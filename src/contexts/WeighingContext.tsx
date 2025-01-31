@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export interface WeighingEntry {
   id: string;
@@ -23,8 +23,40 @@ interface WeighingContextType {
 
 const WeighingContext = createContext<WeighingContextType | undefined>(undefined);
 
+const STORAGE_KEY = 'weighing_entries';
+
+// Helper function to serialize dates properly
+const serializeEntries = (entries: WeighingEntry[]) => {
+  return JSON.stringify(entries);
+};
+
+// Helper function to deserialize dates properly
+const deserializeEntries = (data: string | null): WeighingEntry[] => {
+  if (!data) return [];
+  try {
+    const parsed = JSON.parse(data);
+    return parsed.map((entry: any) => ({
+      ...entry,
+      timestamp: new Date(entry.timestamp),
+      lastUpdated: new Date(entry.lastUpdated)
+    }));
+  } catch (error) {
+    console.error('Error parsing stored data:', error);
+    return [];
+  }
+};
+
 export const WeighingProvider = ({ children }: { children: ReactNode }) => {
-  const [entries, setEntries] = useState<WeighingEntry[]>([]);
+  const [entries, setEntries] = useState<WeighingEntry[]>(() => {
+    // Initialize state from localStorage
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    return deserializeEntries(storedData);
+  });
+
+  // Save to localStorage whenever entries change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, serializeEntries(entries));
+  }, [entries]);
 
   const addEntry = (entry: Omit<WeighingEntry, 'id' | 'timestamp' | 'lastUpdated'>) => {
     const now = new Date();
