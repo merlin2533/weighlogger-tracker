@@ -20,6 +20,8 @@ const Index = () => {
   const [weight, setWeight] = useState("");
   const [cargoType, setCargoType] = useState<"Holz" | "Kies" | "Müll" | "Papier" | "Sand" | "Aushub" | "gesiebte Erde fein" | "gesiebte Erde Grob" | "Steine" | "Lego Steine (Beton)" | "Chipsi Mais" | "Seramis" | "Kronkorken" | "Dosen">("Holz");
   const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [newEmptyWeight, setNewEmptyWeight] = useState("");
+  const [selectedVehicle, setSelectedVehicle] = useState("");
 
   const handleWeighing = () => {
     const knownVehicles = getKnownVehicles();
@@ -156,6 +158,31 @@ const Index = () => {
       "Gesamtgewicht transportiert": `${summary.totalCargo} kg`
     }));
     exportToExcel(data, "Fahrzeug-Übersicht");
+  };
+
+  const handleEmptyWeightUpdate = () => {
+    const weight = Number(newEmptyWeight);
+    if (!selectedVehicle || !weight) {
+      toast.error("Bitte Fahrzeug und Gewicht angeben");
+      return;
+    }
+
+    // Find existing entry with this license plate
+    const existingEntry = entries.find(e => e.licensePlate === selectedVehicle);
+    if (existingEntry) {
+      updateEntry(existingEntry.id, { emptyWeight: weight });
+      toast.success("Leergewicht wurde aktualisiert");
+    } else {
+      // Create a new entry with just the empty weight
+      addEntry({
+        licensePlate: selectedVehicle,
+        emptyWeight: weight
+      });
+      toast.success("Leergewicht wurde gespeichert");
+    }
+
+    setNewEmptyWeight("");
+    setSelectedVehicle("");
   };
 
   return (
@@ -414,6 +441,61 @@ const Index = () => {
               <TableRow key={summary.cargoType}>
                 <TableCell>{summary.cargoType}</TableCell>
                 <TableCell>{summary.totalWeight} kg</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
+        <h2 className="text-2xl font-bold">Fahrzeug-Leergewichte</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Input
+            placeholder="Kennzeichen"
+            value={selectedVehicle}
+            onChange={(e) => setSelectedVehicle(e.target.value)}
+          />
+          <Input
+            type="number"
+            placeholder="Leergewicht (kg)"
+            value={newEmptyWeight}
+            onChange={(e) => setNewEmptyWeight(e.target.value)}
+          />
+          <Button onClick={handleEmptyWeightUpdate}>Leergewicht speichern</Button>
+        </div>
+
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Kennzeichen</TableHead>
+              <TableHead>Leergewicht</TableHead>
+              <TableHead>Zuletzt aktualisiert</TableHead>
+              <TableHead>Aktionen</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {getKnownVehicles().map((vehicle) => (
+              <TableRow key={vehicle.licensePlate}>
+                <TableCell>{vehicle.licensePlate}</TableCell>
+                <TableCell>{vehicle.emptyWeight} kg</TableCell>
+                <TableCell>
+                  {entries.find(e => e.licensePlate === vehicle.licensePlate)?.lastUpdated 
+                    ? formatDate(entries.find(e => e.licensePlate === vehicle.licensePlate)!.lastUpdated)
+                    : "-"}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedVehicle(vehicle.licensePlate);
+                      setNewEmptyWeight(vehicle.emptyWeight?.toString() || "");
+                    }}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
