@@ -110,26 +110,7 @@ export const EmptyWeightManager = () => {
 
   return (
     <div className="bg-white p-6 rounded-lg shadow-md space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Fahrzeug-Leergewichte</h2>
-        <div className="flex gap-2">
-          <input
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleImport}
-            ref={fileInputRef}
-            className="hidden"
-          />
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-            <Upload className="h-4 w-4 mr-2" />
-            Import
-          </Button>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="h-4 w-4 mr-2" />
-            Export
-          </Button>
-        </div>
-      </div>
+      <h2 className="text-2xl font-bold">Fahrzeug-Leergewichte</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Input
@@ -181,6 +162,24 @@ export const EmptyWeightManager = () => {
           ))}
         </TableBody>
       </Table>
+
+      <div className="flex gap-2 justify-end pt-4 border-t">
+        <input
+          type="file"
+          accept=".xlsx,.xls"
+          onChange={handleImport}
+          ref={fileInputRef}
+          className="hidden"
+        />
+        <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+          <Upload className="h-4 w-4 mr-2" />
+          Import
+        </Button>
+        <Button variant="outline" onClick={handleExport}>
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
+      </div>
     </div>
   );
 };
